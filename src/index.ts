@@ -1,15 +1,15 @@
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
+import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import {
   AutoRagSearchRequestSchema,
   AutoRagSearchResponseSchema,
 } from "./schema.js";
-import { z } from "zod";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 
 const server = new Server(
   {
@@ -61,7 +61,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
   return {
     tools: [
       {
-        name: "autorag_search",
+        name: "search_autorag",
         description:
           "Search the configured Cloudflare AutoRAG instance for relevant information.",
         inputSchema: zodToJsonSchema(AutoRagSearchRequestSchema),
