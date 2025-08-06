@@ -38,8 +38,17 @@ const server = new Server(
   },
 );
 
-async function autoragSearch(query: string) {
+async function autoragSearch(args: z.infer<typeof AutoRagSearchRequestSchema>) {
   const url = `${CLOUDFLARE_API_URL}/accounts/${env.CLOUDFLARE_ACCOUNT_ID}/autorag/rags/${env.CLOUDFLARE_AUTORAG_ID}/search`;
+
+  const body = {
+    query: args.query,
+    rewrite_query: args.rewrite_query ?? env.REWRITE_QUERY,
+    max_num_results: args.max_num_results ?? env.MAX_NUM_RESULTS,
+    ranking_options: {
+      score_threshold: args.score_threshold ?? env.SCORE_THRESHOLD,
+    },
+  };
 
   const response = await fetch(url, {
     method: "POST",
@@ -47,7 +56,7 @@ async function autoragSearch(query: string) {
       Authorization: `Bearer ${env.CLOUDFLARE_API_TOKEN}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ query }),
+    body: JSON.stringify(body),
   });
 
   if (!response.ok) {
@@ -65,7 +74,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
   return {
     tools: [
       {
-        name: "search_autorag",
+        name: "autorag_search",
         description:
           "Search the configured Cloudflare AutoRAG instance for relevant information.",
         inputSchema: zodToJsonSchema(AutoRagSearchRequestSchema),
@@ -82,7 +91,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     switch (request.params.name) {
       case "autorag_search": {
         const args = AutoRagSearchRequestSchema.parse(request.params.arguments);
-        const results = await autoragSearch(args.query);
+        const results = await autoragSearch(args);
         return {
           content: [
             {
