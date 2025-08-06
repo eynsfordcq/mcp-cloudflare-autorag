@@ -11,6 +11,21 @@ import {
   AutoRagSearchResponseSchema,
 } from "./schema.js";
 
+const EnvSchema = z.object({
+  CLOUDFLARE_API_TOKEN: z.string(),
+  CLOUDFLARE_ACCOUNT_ID: z.string(),
+  CLOUDFLARE_AUTORAG_ID: z.string(),
+  REWRITE_QUERY: z
+    .string()
+    .transform((v) => v === "true")
+    .default("false"),
+  MAX_NUM_RESULTS: z.coerce.number().int().min(1).max(20).default(10),
+  SCORE_THRESHOLD: z.coerce.number().int().min(0).max(1).default(0),
+});
+
+const env = EnvSchema.parse(process.env);
+const CLOUDFLARE_API_URL = "https://api.cloudflare.com/client/v4";
+
 const server = new Server(
   {
     name: "mcp-cloudflare-autorag",
@@ -22,25 +37,14 @@ const server = new Server(
     },
   },
 );
-const CLOUDFLARE_API_TOKEN = process.env.CLOUDFLARE_API_TOKEN;
-const CLOUDFLARE_ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID;
-const CLOUDFLARE_AUTORAG_ID = process.env.CLOUDFLARE_AUTORAG_ID;
-const CLOUDFLARE_API_URL = "https://api.cloudflare.com/client/v4";
-
-if (!CLOUDFLARE_API_TOKEN || !CLOUDFLARE_ACCOUNT_ID || !CLOUDFLARE_AUTORAG_ID) {
-  console.error(
-    "CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_AUTORAG_ID environment variables are required.",
-  );
-  process.exit(1);
-}
 
 async function autoragSearch(query: string) {
-  const url = `${CLOUDFLARE_API_URL}/accounts/${CLOUDFLARE_ACCOUNT_ID}/autorag/rags/${CLOUDFLARE_AUTORAG_ID}/search`;
+  const url = `${CLOUDFLARE_API_URL}/accounts/${env.CLOUDFLARE_ACCOUNT_ID}/autorag/rags/${env.CLOUDFLARE_AUTORAG_ID}/search`;
 
   const response = await fetch(url, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${CLOUDFLARE_API_TOKEN}`,
+      Authorization: `Bearer ${env.CLOUDFLARE_API_TOKEN}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({ query }),
